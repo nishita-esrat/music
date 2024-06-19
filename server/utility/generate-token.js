@@ -2,15 +2,14 @@
 const jwt = require("jsonwebtoken");
 
 // generate token function
-const generateToken = (email) => {
+exports.generateToken = (email) => {
   const token = jwt.sign(
     {
       email,
     },
     process.env.jwt,
-    { expiresIn: " 2 days" }
+    { expiresIn: "2d" }
   );
   return token;
 };
 
-export default generateToken;

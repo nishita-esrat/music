@@ -7,7 +7,7 @@ cloudinary.config({
   api_secret: process.env.cloudinary_api_secret,
 });
 // upload image function
-export const uploadImageCloudinary = async (image, folderName) => {
+const uploadImageCloudinary = async (image, folderName) => {
   const result = await cloudinary.uploader.upload(image, {
     folder: folderName,
   });
@@ -15,7 +15,9 @@ export const uploadImageCloudinary = async (image, folderName) => {
 };
 
 // delete image function
-export const deleteImageCloudinary = async (publicId) => {
+const deleteImageCloudinary = async (publicId) => {
   const result = await cloudinary.uploader.destroy(publicId);
   return result;
 };
+
+module.exports = { uploadImageCloudinary, deleteImageCloudinary };
