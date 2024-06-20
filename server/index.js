@@ -248,6 +248,52 @@ async function run() {
         console.log(error);
       }
     });
+
+    // update class status
+    app.put("/update-status/:classId", authenticated, async (req, res) => {
+      try {
+        // get value
+        const { status } = req.body;
+        const isAdmin = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check admin or not
+        if (!(isAdmin.role == "admin")) {
+          return res.status(403).json({ message: "Forbidden" });
+        } else {
+          // if status is approved than insert class id into instructor approved_class
+          if (status == "approved") {
+            const existClass = await Class.findOne({
+              _id: new ObjectId(req.params.classId),
+            });
+            const instructor = await User.findOne({
+              email: existClass.instructor_email,
+            });
+            instructor.approved_class.push(req.params.classId);
+            await User.replaceOne(
+              { _id: new ObjectId(instructor._id) },
+              instructor,
+              { upsert: true }
+            );
+          }
+          // status info
+          const info = {
+            $set: {
+              status: status,
+            },
+          };
+          // update class status
+          await Class.updateOne(
+            { _id: new ObjectId(req.params.classId) },
+            info,
+            { upsert: true }
+          );
+          return res.status(200).json({ message: "updated status" });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
