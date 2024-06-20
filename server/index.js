@@ -202,6 +202,52 @@ async function run() {
         console.log(error);
       }
     });
+
+    // update class
+    app.put("/update-class/:classId", authenticated, async (req, res) => {
+      try {
+        const isInstructor = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check instructor or not
+        if (!(isInstructor.role == "instructor")) {
+          return res.status(403).json({ message: "Forbidden" });
+        } else {
+          // get value
+          const { class_image, public_id } = req.body;
+          // class info
+          let info = {
+            ...req.body,
+          };
+          if (class_image && public_id) {
+            //to delete previous photo
+            const deletePhoto = await deleteImageCloudinary(public_id);
+            if (deletePhoto.result == "ok") {
+              // to get photo url function
+              const { url, public_id } = await uploadImageCloudinary(
+                class_image,
+                "class photo"
+              );
+              console.log("iner2");
+              info = {
+                ...req.body,
+                class_image: url,
+                public_id,
+              };
+            }
+          }
+          // update class
+          const result = await Class.updateOne(
+            { _id: new ObjectId(req.params.classId) },
+            { $set: info },
+            { upsert: true }
+          );
+          return res.status(200).json({ message: "updated class" });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
