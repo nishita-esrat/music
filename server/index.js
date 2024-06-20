@@ -117,10 +117,6 @@ async function run() {
               .status(200)
               .json({ message: `now ${user.name} is admin` });
           } else {
-            // delete some property of user
-            delete user.following;
-            delete user.select_class;
-            delete user.enrolled_class;
             // add some porperty in user object
             user.role = role;
             user.follower = [];
