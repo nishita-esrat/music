@@ -1,9 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { generateToken } = require("./utility/generate-token");
 const { uploadImageCloudinary } = require("./utility/cloudinary");
+const { authenticated } = require("./middleware");
 const app = express();
 // middleware
 app.use(express.json());
@@ -80,6 +81,62 @@ async function run() {
         const { email } = req.body;
         const token = generateToken(email);
         return res.status(200).json({ token });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    // make role admin or instructor
+    app.put("/update-role/:userId", authenticated, async (req, res) => {
+      try {
+        // get value
+        const { role } = req.body;
+        // find user
+        const isAdmin = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check user is admin or not
+        if (!(isAdmin.role == "admin")) {
+          return res.status(403).json({ message: "Forbidden" });
+        } else {
+          const user = await User.findOne({
+            _id: new ObjectId(req.params.userId),
+          });
+          // update role admin or instructor
+          if (role == "admin") {
+            user.role = role;
+            const newUser = { ...user, role };
+            await User.updateOne(
+              {
+                _id: new ObjectId(req.params.userId),
+              },
+              { $set: newUser },
+              { upsert: true }
+            );
+            return res
+              .status(200)
+              .json({ message: `now ${user.name} is admin` });
+          } else {
+            // delete some property of user
+            delete user.following;
+            delete user.select_class;
+            delete user.enrolled_class;
+            // add some porperty in user object
+            user.role = role;
+            user.follower = [];
+            user.approved_class = [];
+            await User.replaceOne(
+              {
+                _id: new ObjectId(req.params.userId),
+              },
+              user,
+              { upsert: true }
+            );
+            return res
+              .status(200)
+              .json({ message: `now ${user.name} is intructor` });
+          }
+        }
       } catch (error) {
         console.log(error);
       }

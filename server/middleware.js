@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 // verify user function
 exports.authenticated = async (req, res, next) => {
   try {
-    const { token } = req.headers['authorization'];
+    const token = req.headers['authorization'];
     if (!token) {
       res.status(401).json({
         error: "please login first",
