@@ -3,7 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { generateToken } = require("./utility/generate-token");
-const { uploadImageCloudinary } = require("./utility/cloudinary");
+const {
+  uploadImageCloudinary,
+  deleteImageCloudinary,
+} = require("./utility/cloudinary");
 const { authenticated } = require("./middleware");
 const app = express();
 // middleware
@@ -133,6 +136,34 @@ async function run() {
               .json({ message: `now ${user.name} is intructor` });
           }
         }
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    // update profile
+    app.put("/update-profile/:userId", async (req, res) => {
+      try {
+        const { photo_url, public_id } = req.body;
+        let update_info = { ...req.body };
+        if (photo_url && public_id) {
+          //to delete previous photo
+          const deletePhoto = await deleteImageCloudinary(public_id);
+          if (deletePhoto.result == "ok") {
+            // to get photo url function
+            const { url, public_id } = await uploadImageCloudinary(
+              photo_url,
+              "avater"
+            );
+            update_info = { ...req.body, photo_url: url, public_id: public_id };
+          }
+        }
+        await User.updateOne(
+          { _id: new ObjectId(req.params.userId) },
+          { $set: update_info },
+          { upsert: true }
+        );
+        res.status(200).json({ message: "your profile is updated" });
       } catch (error) {
         console.log(error);
       }
