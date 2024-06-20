@@ -31,6 +31,7 @@ async function run() {
     // database collection
     const database = client.db("music");
     const User = database.collection("user");
+    const Class = database.collection("class");
 
     // for checking route
     app.get("/health", (_req, res) => {
@@ -164,6 +165,39 @@ async function run() {
           { upsert: true }
         );
         res.status(200).json({ message: "your profile is updated" });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    // create class
+    app.post("/add-class", authenticated, async (req, res) => {
+      try {
+        // find user
+        const isInstructor = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check user is instructor or not
+        if (!(isInstructor.role == "instructor")) {
+          return res.status(403).json({ message: "Forbidden" });
+        } else {
+          // to get class image photo url
+          const { url, public_id } = await uploadImageCloudinary(
+            req.body.class_image,
+            "class photo"
+          );
+          // get value
+          const newClass = {
+            ...req.body,
+            class_image: url,
+            public_id,
+            status: "pending",
+            feedback: "",
+          };
+          // add class
+          await Class.insertOne(newClass);
+          return res.status(200).json({ message: "new class created" });
+        }
       } catch (error) {
         console.log(error);
       }
