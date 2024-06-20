@@ -73,6 +73,17 @@ async function run() {
         console.log(error);
       }
     });
+
+    // login user
+    app.post("/login", (req, res) => {
+      try {
+        const { email } = req.body;
+        const token = generateToken(email);
+        return res.status(200).json({ token });
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
