@@ -294,6 +294,39 @@ async function run() {
         console.log(error);
       }
     });
+
+    // send feedback
+    app.put("/feedback/:classId", authenticated, async (req, res) => {
+      try {
+        // get value
+        const { feedback } = req.body;
+        const isAdmin = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check admin or not
+        if (!(isAdmin.role == "admin")) {
+          return res.status(403).json({ message: "Forbidden" });
+        } else {
+          // feedback info
+          const info = {
+            $set: {
+              feedback,
+            },
+          };
+          // update class feedback
+          const result = await Class.updateOne(
+            { _id: new ObjectId(req.params.classId) },
+            info,
+            { upsert: true }
+          );
+          return res.status(200).json({ message: "sent feedback" });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
