@@ -326,7 +326,17 @@ async function run() {
       }
     });
 
-    
+    // show 6 classes based on the number of student
+    app.get("/top-classes", async (_req, res) => {
+      // filter based on the total student ,greater than 6
+      const filter = {
+        $expr: {
+          $gte: [{ $size: "$total_enrolled_students" }, 6],
+        },
+      };
+      const result = await Class.find(filter).toArray();
+      res.status(200).json({ top_classes: result });
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
