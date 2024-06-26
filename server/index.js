@@ -394,8 +394,14 @@ async function run() {
         },
       ];
       const result = await User.aggregate(filter).toArray();
-      console.log(result);
       return res.status(200).json({ top_instructor: result });
+    });
+
+    // show all instructor
+    app.get("/instructors", async (_req, res) => {
+      const filter = { role: "instructor" };
+      const result = await User.find(filter).toArray();
+      return res.status(200).json({ instructors: result });
     });
   } finally {
     // Ensures that the client will close when you finish/error
