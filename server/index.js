@@ -525,6 +525,47 @@ async function run() {
         console.log(error);
       }
     });
+
+    // show follower student
+    app.get("/follower", authenticated, async (req, res) => {
+      try {
+        // find instructor
+        const instructor = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check inctructor or not
+        if (!(instructor.role == "instructor")) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+        const filter = [
+          { $match: { email: req.authenticated_user.email } },
+          {
+            $lookup: {
+              from: "user",
+              localField: "follower",
+              foreignField: "_id",
+              as: "followerUser",
+            },
+          },
+          {
+            $unwind: "$followerUser",
+          },
+          {
+            $group: {
+              _id: "$_id",
+              name: { $first: "$name" },
+              followerUser: { $push: "$followerUser" },
+            },
+          },
+        ];
+        const result = await User.aggregate(filter).toArray();
+        return res.status(200).json({ follower: result });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
