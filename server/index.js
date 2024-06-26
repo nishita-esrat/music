@@ -318,7 +318,7 @@ async function run() {
             },
           };
           // update class feedback
-          const result = await Class.updateOne(
+          await Class.updateOne(
             { _id: new ObjectId(req.params.classId) },
             info,
             { upsert: true }
@@ -403,6 +403,79 @@ async function run() {
       const result = await User.find(filter).toArray();
       return res.status(200).json({ instructors: result });
     });
+
+    // follow and unfollow instructor
+    app.put(
+      "/follow-unfollow/:instructorId",
+      authenticated,
+      async (req, res) => {
+        try {
+          // find student
+          const student = await User.findOne({
+            email: req.authenticated_user.email,
+          });
+          // check student or not
+          if (!(student.role == "student")) {
+            return res.status(403).json({ message: "Forbidden" });
+          }
+          // find instructor
+          const instructor = await User.findOne({
+            _id: new ObjectId(req.params.instructorId),
+          });
+          // check instructor id is include or not
+          const isFollowing = student.following.includes(
+            req.params.instructorId
+          );
+          // if is yes then
+          if (isFollowing) {
+            // find the index of instructor
+            const followingIndex = student.following.indexOf(
+              req.params.instructorId
+            );
+            // find the index of student
+            const followerIndex = instructor.follower.indexOf(student._id);
+            // delete instructor id from the student
+            student.following.splice(followingIndex, 1);
+            // delete student id from the instructor
+            instructor.follower.splice(followerIndex, 1);
+            await User.updateOne(
+              { _id: student._id },
+              { $set: { ...student } },
+              { upsert: true }
+            );
+            await User.updateOne(
+              { _id: new ObjectId(req.params.instructorId) },
+              { $set: { ...instructor } },
+              { upsert: true }
+            );
+            return res.status(200).json({
+              message: `unfollow the instructor ${instructor.name}`,
+            });
+          } else {
+            // add instructor id into student
+            student.following.push(req.params.instructorId);
+            // add student id into instructor
+            instructor.follower.push(student._id);
+            await User.updateOne(
+              { _id: student._id },
+              { $set: { ...student } },
+              { upsert: true }
+            );
+            await User.updateOne(
+              { _id: new ObjectId(req.params.instructorId) },
+              { $set: { ...instructor } },
+              { upsert: true }
+            );
+            return res
+              .status(200)
+              .json({ message: `follow the instructor ${instructor.name}` });
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    );
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
