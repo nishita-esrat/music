@@ -106,6 +106,10 @@ async function run() {
           const user = await User.findOne({
             _id: new ObjectId(req.params.userId),
           });
+          // delete some property
+          delete user.following;
+          delete user.enrolled_class;
+          delete user.select_class;
           // update role admin or instructor
           if (role == "admin") {
             user.role = role;
@@ -336,6 +340,62 @@ async function run() {
       };
       const result = await Class.find(filter).toArray();
       res.status(200).json({ top_classes: result });
+    });
+
+    // show 6 instructor based on the number of student
+    app.get("/top-instructor", async (_req, res) => {
+      const filter = [
+        { $match: { role: "instructor" } },
+        {
+          $addFields: {
+            approved_classes: {
+              $map: {
+                input: "$approved_class",
+                as: "approved_classes_id",
+                in: {
+                  $convert: { input: "$$approved_classes_id", to: "objectId" },
+                },
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "class",
+            localField: "approved_classes",
+            foreignField: "_id",
+            as: "approvedClasses",
+          },
+        },
+        {
+          $unwind: "$approvedClasses",
+        },
+        {
+          $match: {
+            $expr: {
+              $gte: [
+                {
+                  $size: {
+                    $ifNull: ["$approvedClasses.total_enrolled_students", []],
+                  },
+                },
+                3,
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            image: { $first: "$photo_url" },
+            name: { $first: "$name" },
+            popular_class: { $push: "$approvedClasses.class_name" },
+          },
+        },
+      ];
+      const result = await User.aggregate(filter).toArray();
+      console.log(result);
+      return res.status(200).json({ top_instructor: result });
     });
   } finally {
     // Ensures that the client will close when you finish/error
