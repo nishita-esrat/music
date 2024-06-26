@@ -609,7 +609,16 @@ async function run() {
       }
     });
 
-    
+    // show classes
+    app.get("/all-classes", async (_req, res) => {
+      try {
+        const filter = { status: "approved" };
+        const result = await Class.find(filter).toArray();
+        return res.status(200).json({ allApprovedClasses: result });
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
