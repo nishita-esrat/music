@@ -565,6 +565,50 @@ async function run() {
       }
     });
 
+    // see instructor classes
+    app.get("/approved-classes/:instructorId", async (req, res) => {
+      try {
+        const filter = [
+          { $match: { _id: new ObjectId(req.params.instructorId) } },
+          {
+            $addFields: {
+              approved_class: {
+                $map: {
+                  input: "$approved_class",
+                  as: "approved_class_Id",
+                  in: {
+                    $convert: { input: "$$approved_class_Id", to: "objectId" },
+                  },
+                },
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "class",
+              localField: "approved_class",
+              foreignField: "_id",
+              as: "approvedClasses",
+            },
+          },
+          {
+            $unwind: "$approvedClasses",
+          },
+          {
+            $group: {
+              _id: "$_id",
+              name: { $first: "$name" },
+              approvedClasses: { $push: "$approvedClasses" },
+            },
+          },
+        ];
+        const result = await User.aggregate(filter).toArray();
+        return res.status(200).json({ approvedClasses: result });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     
   } finally {
     // Ensures that the client will close when you finish/error
