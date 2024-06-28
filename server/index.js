@@ -769,6 +769,42 @@ async function run() {
         console.log(error);
       }
     });
+
+    // show total enrolled student
+    app.get(
+      "/total-enrolled-student/:classId",
+      authenticated,
+      async (req, res) => {
+        try {
+          // get user
+          const user = await User.find({
+            email: req.authenticated_user.email,
+          }).toArray();
+          // check user is admin or not
+          if (!(user[0].role == "admin")) {
+            return res.status(403).json({ message: "forbidden" });
+          } else {
+            // if user is admin than show class
+            const selected_class = await Class.find({
+              _id: new ObjectId(req.params.classId),
+            }).toArray();
+            // get total enrolled student
+            const enrolled_students = await User.find({
+              _id: {
+                $in: selected_class[0].total_enrolled_students,
+              },
+            }).toArray();
+            return res.status(200).json({
+              enrolled_students,
+            });
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    );
+
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
