@@ -747,6 +747,28 @@ async function run() {
         console.log(error);
       }
     });
+
+    // show all classes an instructor
+    app.get("/all-class-of-instructor", authenticated, async (req, res) => {
+      try {
+        // get user
+        const user = await User.find({
+          email: req.authenticated_user.email,
+        }).toArray();
+        // check user is instructor or not
+        if (!(user[0].role == "instructor")) {
+          return res.status(403).json({ message: "forbidden" });
+        } else {
+          // if user is instructor than show all classes
+          const result = await Class.find({
+            instructor_email: user[0].email,
+          }).toArray();
+          return res.status(200).json({ classes_of_instructor: result });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
