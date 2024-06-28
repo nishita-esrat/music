@@ -660,6 +660,33 @@ async function run() {
         console.log(error);
       }
     });
+
+    // delete selected classes
+    app.put(
+      "/delete-select-class/:classId",
+      authenticated,
+      async (req, res) => {
+        try {
+          // get student
+          const student = await User.find({
+            email: req.authenticated_user.email,
+          }).toArray();
+          // check student or not
+          if (!(student[0].role == "student")) {
+            return res.status(403).json({ message: "Forbidden" });
+          }
+          // delete selected class
+          await User.updateOne(
+            { _id: student[0]._id },
+            { $pull: { select_class: req.params.classId } }
+          );
+          return res.status(200).json({ message: "class is deselected" });
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    );
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
