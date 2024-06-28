@@ -727,6 +727,26 @@ async function run() {
         console.log(error);
       }
     });
+
+    // show all classes
+    app.get("/all-class", authenticated, async (req, res) => {
+      try {
+        // get user
+        const user = await User.find({
+          email: req.authenticated_user.email,
+        }).toArray();
+        // check user is admin or not
+        if (!(user[0].role == "admin")) {
+          return res.status(403).json({ message: "forbidden" });
+        } else {
+          // if user is admin than show all classes
+          const result = await Class.find({}).toArray();
+          return res.status(200).json({ classes: result });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
