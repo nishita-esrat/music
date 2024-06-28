@@ -639,6 +639,27 @@ async function run() {
         console.log(error);
       }
     });
+
+    // show selected classes
+    app.get("/select-class", authenticated, async (req, res) => {
+      try {
+        // get student
+        const student = await User.find({
+          email: req.authenticated_user.email,
+        }).toArray();
+        // check student or not
+        if (!(student[0].role == "student")) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+        // get student selected class
+        const result = await Class.find({
+          _id: { $in: student[0].select_class.map((id) => new ObjectId(id)) },
+        }).toArray();
+        return res.status(200).json({ select_class: result });
+      } catch (error) {
+        console.log(error);
+      }
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
