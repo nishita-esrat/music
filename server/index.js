@@ -888,6 +888,31 @@ async function run() {
       }
     });
 
+    // show payment using descending order
+    app.get("/payments", authenticated, async (req, res) => {
+      try {
+        // get user
+        const user = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check user is student or not
+        if (!(user.role == "student")) {
+          return res.status(403).json({ message: "forbidden" });
+        } else {
+          // if user is student than show payment using descending order
+          const payments = await Payment.find({
+            email: user.email,
+          })
+            .sort({ date: -1 })
+            .toArray();
+          return res.status(200).json({
+            payments,
+          });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
     
   } finally {
     // Ensures that the client will close when you finish/error
