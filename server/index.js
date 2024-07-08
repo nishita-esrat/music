@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const stripe = require("stripe")("your-stripe-secret-key");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { generateToken } = require("./utility/generate-token");
 const {
@@ -804,6 +805,23 @@ async function run() {
       }
     );
 
+    // create payment client secret
+    app.post("/create-payment-intent", async (req, res) => {
+      const { amount } = req.body;
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: parseInt(amount * 100),
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+
+        res.status(200).send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    });
     
   } finally {
     // Ensures that the client will close when you finish/error
