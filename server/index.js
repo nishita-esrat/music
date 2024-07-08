@@ -33,6 +33,7 @@ async function run() {
     const database = client.db("music");
     const User = database.collection("user");
     const Class = database.collection("class");
+    const Payment = database.collection("payment");
 
     // for checking route
     app.get("/health", (_req, res) => {
@@ -822,6 +823,71 @@ async function run() {
         console.log(error);
       }
     });
+
+    // after successful payment Available seats for the particular Class will be reduced by 1. The Class information will be shown on the My Enrolled Classes page and removed from the My Selected Classes page
+    app.put("/payment/:classId", authenticated, async (req, res) => {
+      try {
+        const { transaction_id, amount } = req.body;
+        // get user
+        const user = await User.findOne({
+          email: req.authenticated_user.email,
+        });
+        // check user is student or not
+        if (!(user.role == "student")) {
+          return res.status(403).json({ message: "forbidden" });
+        } else {
+          // if user is student than
+          const selected_class = await Class.findOne({
+            _id: new ObjectId(req.params.classId),
+          });
+
+          // to delete the class from user who is student , select_class
+          await User.updateOne(
+            { email: req.authenticated_user.email },
+            { $pull: { select_class: req.params.classId } },
+            { new: true }
+          );
+
+          // to add the class from user who is student , enrolled_class
+          await User.updateOne(
+            { email: req.authenticated_user.email },
+            { $push: { enrolled_class: req.params.classId } },
+            { new: true }
+          );
+
+          // decrement available seats by 1
+          await Class.updateOne(
+            { _id: new ObjectId(req.params.classId) },
+            { $set: { available_seats: selected_class.available_seats - 1 } },
+            { new: true }
+          );
+
+          // add the user in total_enrolled_students
+          await Class.updateOne(
+            { _id: new ObjectId(req.params.classId) },
+            { $push: { total_enrolled_students: user._id } },
+            { new: true }
+          );
+
+          // create paymnet object
+          const payment = {
+            email: user.email,
+            class_name: selected_class.class_name,
+            amount,
+            transaction_id,
+            date: new Date(),
+          };
+          // save payment in database
+          await Payment.insertOne(payment);
+          return res.status(200).json({
+            message: `you are successfully enrolled ${selected_class.class_name}`,
+          });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     
   } finally {
     // Ensures that the client will close when you finish/error
