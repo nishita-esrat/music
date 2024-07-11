@@ -1,0 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+/* common class */
+.btn{
+  color: white;
+  border-color: white;
+}
+.btn:hover{
+  border-color: white;
+}
